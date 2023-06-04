@@ -4,7 +4,7 @@ from z3 import *
 
 person_count = 20
 rooms_count = 10
-time_slots_count = 10
+timeslots_count = 10
 number_of_rehearsals = 3
 
 
@@ -50,9 +50,6 @@ musicians_groups = [
 solver = Solver()
 
 # Declare sorts and constants for:
-# Person (simple)
-# Room (has size, has list of attributes)
-# Group (has size, has list of attributes)
 # Timeslots (simple)
 
 AttributeSort = DeclareSort("Attribute")
@@ -129,6 +126,17 @@ for idx, group in enumerate(musicians_groups):
     solver.add(GroupMembers(new_group) == group_members)
 
 
+# Declare Timeslot
+TimeslotSort = DeclareSort("Timeslot")
+timeslots = []
+for timeslot_index in range(timeslots_count):
+    new_timeslot = Const(f"Timeslot {timeslot_index}", TimeslotSort)
+
+    # Define timeslot to be distinct from every other previously defined timeslot
+    for prev_timeslot in timeslots:
+        solver.add(new_timeslot != prev_timeslot)
+
+    timeslots.append(new_timeslot)
 
 
 
