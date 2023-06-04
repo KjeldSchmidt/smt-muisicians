@@ -101,10 +101,33 @@ for idx, room in enumerate(rooms):
 GroupSort = DeclareSort("Group")
 GroupSize = Function("group_size", GroupSort, IntSort())
 GroupMembers = Function("group_members", GroupSort, SetSort(PersonSort))
+GroupAttributes = Function("group_attributes", GroupSort, AttributeSetSort)
 
 groups_consts = []
 for idx, group in enumerate(musicians_groups):
     new_group = Const(f"Group {idx}", GroupSort)
+
+    # Distinct groups
+    for prev_group in groups_consts:
+        solver.add(new_group != prev_group)
+
+    groups_consts.append(new_group)
+
+    # Group Size
+    solver.add(GroupSize(new_group) == len(group[0]))
+
+    # Add group attributes
+    group_attributes = EmptySet(AttributeSort)
+    for attribute in group[1]:
+        group_attributes = SetAdd(group_attributes, attributes[attribute])
+    solver.add(GroupAttributes(new_group) == group_attributes)
+
+    # Add group members
+    group_members = EmptySet(PersonSort)
+    for member in group[0]:
+        group_members = SetAdd(group_members, people[member])
+    solver.add(GroupMembers(new_group) == group_members)
+
 
 
 
