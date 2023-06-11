@@ -167,9 +167,6 @@ Timeslot_group_to_room = Function("Timeslot and Group to Room", TimeslotSort, Gr
 for room_a, room_b in itertools.combinations(rooms_consts, 2):
     for timeslots_const in timeslots_consts:
         # A group does not play twice at the same time
-        """solver.add(
-            (Timeslot_room_to_group(timeslots_const, room_a) != Timeslot_room_to_group(timeslots_const, room_b))
-        )"""
         solver.add(Implies(
             Timeslot_room_to_group(timeslots_const, room_a) == Timeslot_room_to_group(timeslots_const, room_b),
             Timeslot_room_to_group(timeslots_const, room_a) == no_group_const
@@ -200,7 +197,24 @@ for timeslots_const in timeslots_consts:
         )
 
 # for time slot t, each group should be pairwise distinct
-# (alternative: the set of the union of all groups is equal in size to the sum of all group sizes)
+GroupOverlaps = Function("GroupOverlaps", GroupSort, GroupSort, BoolSort())
+for group_a, group_b in itertools.combinations(groups_consts, 2):
+    # Tell Z3 which groups overlap
+    solver.add(Implies(
+        SetIntersect(GroupMembers(group_a), GroupMembers(group_b)) != EmptySet(PersonSort),
+        And(GroupOverlaps(group_a, group_b), GroupOverlaps(group_b, group_a))
+    ))
+
+for room_a, room_b in itertools.combinations(rooms_consts, 2):
+    for timeslots_const in timeslots_consts:
+        # No two groups playing at the same time have overlap in people
+        solver.add(Not(
+            GroupOverlaps(
+                Timeslot_room_to_group(timeslots_const, room_a),
+                Timeslot_room_to_group(timeslots_const, room_b)
+            )
+        ))
+
 
 # each group is assigned exactly `number of rehearsals` times
 # over all time slots, each group is assigned to the concert hall at least once
