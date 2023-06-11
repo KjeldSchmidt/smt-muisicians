@@ -69,7 +69,10 @@ for attribute in raw_attributes:
 
 
 # Declare people
-PersonSort = DeclareSort("Person")
+PersonDatatype = Datatype("Person")
+for person_index in range(person_count):
+    PersonDatatype.declare(f"Person {person_index}")
+PersonSort = PersonDatatype.create()
 people = []
 for person_index in range(person_count):
     new_person = Const(f"Person {person_index}", PersonSort)
@@ -81,7 +84,10 @@ for person_index in range(person_count):
     people.append(new_person)
 
 # Declare rooms
-RoomSort = DeclareSort("Room")
+RoomDatatype = Datatype("Room")
+for room_index in range(len(rooms)):
+    RoomDatatype.declare(f"Room {room_index}")
+RoomSort = RoomDatatype.create()
 concert_hall_const = None
 rooms_consts = []
 
@@ -166,14 +172,7 @@ set_of_timeslots = EmptySet(TimeslotSort)
 for timeslot in timeslots_consts:
     set_of_timeslots = SetAdd(set_of_timeslots, timeslot)
 
-
-# solver.add(group_1 == SetAdd(SetAdd(EmptySet(PersonSort), people[0]), people[2]))
-# solver.add(group_2 == SetAdd(SetAdd(EmptySet(PersonSort), people[1]), people[1]))
-# solver.add(SetIntersect(group_1, group_2) == EmptySet(PersonSort))
-
-
 Timeslot_room_to_group = Function("Timeslot and Room to Group", TimeslotSort, RoomSort, GroupSort)
-Timeslot_group_to_room = Function("Timeslot and Group to Room", TimeslotSort, GroupSort, RoomSort)
 
 
 # No group can play in two rooms at the same time
@@ -228,7 +227,25 @@ for room_a, room_b in itertools.combinations(rooms_consts, 2):
             )
         ))
 
-# each group is assigned exactly `number of rehearsals` times#
+# each group is assigned at least `number of rehearsals` times
+for group_idx, group_const in enumerate(groups_consts):
+    time_slots_for_group = []
+    # There are `number of rehearsals` pairs of time/place where a group plays
+    for session_idx in range(number_of_rehearsals):
+        time_slot_placeholder = Const(f"Session {session_idx} for group {group_idx} timeslot", TimeslotSort)
+        room_placeholder = Const(f"Session {session_idx} for group {group_idx} room", RoomSort)
+        time_slots_for_group.append(time_slot_placeholder)
+
+        solver.add(
+            Exists(
+                [time_slot_placeholder, room_placeholder],
+                Timeslot_room_to_group(time_slot_placeholder, room_placeholder) == group_const
+            )
+        )
+
+    # And all of these pairs happen at a different time
+    for time_slot_a, time_slot_b in itertools.combinations(time_slots_for_group, 2):
+        solver.add(time_slot_a != time_slot_b)
 
 
 # over all time slots, each group is assigned to the concert hall at least once
