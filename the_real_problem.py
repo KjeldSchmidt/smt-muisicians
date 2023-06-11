@@ -4,23 +4,30 @@ import itertools
 from z3 import *
 
 person_count = 20
-rooms_count = 10
 timeslots_count = 10
 number_of_rehearsals = 3
 
-
 rooms = [
     (20, ["ConcertHall", "Drumkit", "Piano", "Accessible"]),
-    (3, ["Piano"]),
     (5, ["Piano"]),
     (5, ["Drumkit"]),
     (3, ["Accessible"]),
-    (3, []),
-    (3, []),
-    (3, []),
+    (3, ["Piano"]),
     (5, []),
     (3, []),
+    (3, []),
+    (3, []),
+    (3, []),
+    (3, []),
+    (3, []),
+    (3, []),
+    (3, []),
+    (3, []),
+    (3, []),
+    (3, []),
+    (3, []),
 ]
+
 
 musicians_groups = [
     ((0, 1, 2), ["Accessible"]),
@@ -98,6 +105,9 @@ GroupSize = Function("group_size", GroupSort, IntSort())
 GroupMembers = Function("group_members", GroupSort, SetSort(PersonSort))
 GroupAttributes = Function("group_attributes", GroupSort, AttributeSetSort)
 no_group_const = Const("No group", GroupSort)
+solver.add(GroupSize(no_group_const) == 0)
+solver.add(GroupAttributes(no_group_const) == EmptySet(AttributeSort))
+solver.add(GroupMembers(no_group_const) == EmptySet(PersonSort))
 
 groups_consts = []
 for idx, group in enumerate(musicians_groups):
@@ -173,8 +183,13 @@ for timeslots_const in timeslots_consts:
         solver.add(SetIntersect(allowed_results_set, result_set) != EmptySet(GroupSort))
 
 
-
 # for time slot t, every group size is smaller than it's room size
+for timeslots_const in timeslots_consts:
+    for room_const in rooms_consts:
+        result = Timeslot_room_to_group(timeslots_const, room_const)
+        solver.add(GroupSize(result) <= RoomSize(room_const))
+
+
 # for time slot t, every room has at least all attributes of the assigned group
 # for time slot t, each group should be pairwise distinct
 # (alternative: the set of the union of all groups is equal in size to the sum of all group sizes)
