@@ -97,6 +97,7 @@ GroupSort = DeclareSort("Group")
 GroupSize = Function("group_size", GroupSort, IntSort())
 GroupMembers = Function("group_members", GroupSort, SetSort(PersonSort))
 GroupAttributes = Function("group_attributes", GroupSort, AttributeSetSort)
+no_group_const = Const("No group", GroupSort)
 
 groups_consts = []
 for idx, group in enumerate(musicians_groups):
@@ -150,20 +151,27 @@ for timeslot_index in range(timeslots_count):
 Timeslot_room_to_group = Function("Timeslot and Room to Group", TimeslotSort, RoomSort, GroupSort)
 Timeslot_group_to_room = Function("Timeslot and Group to Room", TimeslotSort, GroupSort, RoomSort)
 
-# define mapping function from time slot to {room, group}
 
-# for time slot t, the set can only contain each room at most once
+# No group can play in two rooms at the same time
 for room_a, room_b in itertools.combinations(rooms_consts, 2):
     for timeslots_const in timeslots_consts:
         # A group does not play twice at the same time
-        solver.add(Timeslot_room_to_group(timeslots_const, room_a) != Timeslot_room_to_group(timeslots_const, room_b))
+        """solver.add(
+            (Timeslot_room_to_group(timeslots_const, room_a) != Timeslot_room_to_group(timeslots_const, room_b))
+        )"""
+        solver.add(Implies(
+            Timeslot_room_to_group(timeslots_const, room_a) == Timeslot_room_to_group(timeslots_const, room_b),
+            Timeslot_room_to_group(timeslots_const, room_a) == no_group_const
+        ))
 
-# The assigned group must exist
+# Any assigned group must exist or be the NoGroup
 for timeslots_const in timeslots_consts:
+    allowed_results_set = SetAdd(setOfGroups, no_group_const)
     for room_const in rooms_consts:
         result = Timeslot_room_to_group(timeslots_const, room_const)
         result_set = SetAdd(EmptySet(GroupSort), result)
-        solver.add(SetIntersect(setOfGroups, result_set) != EmptySet(GroupSort))
+        solver.add(SetIntersect(allowed_results_set, result_set) != EmptySet(GroupSort))
+
 
 
 # for time slot t, every group size is smaller than it's room size
@@ -176,4 +184,11 @@ for timeslots_const in timeslots_consts:
 
 assert solver.check() == sat
 
-print(solver.model())
+model = solver.model()
+for thing in model:
+    if thing.name() != "Timeslot and Room to Group":
+        print(f"{thing} = {model.get_interp(thing)}")
+    else:
+        print(f"{thing} =")
+        for line in model.get_interp(thing).as_list():
+            print(f"{line}")
