@@ -1,4 +1,5 @@
-from enum import Enum, auto
+import json
+import itertools
 
 from z3 import *
 
@@ -8,19 +9,12 @@ timeslots_count = 10
 number_of_rehearsals = 3
 
 
-class Attribute(Enum):
-    Piano = auto()
-    Accessible = auto()
-    Drumkit = auto()
-    ConcertHall = auto()
-
-
 rooms = [
-    (20, [Attribute.ConcertHall, Attribute.Drumkit, Attribute.Piano, Attribute.Accessible]),
-    (3, [Attribute.Piano]),
-    (5, [Attribute.Piano]),
-    (5, [Attribute.Drumkit]),
-    (3, [Attribute.Accessible]),
+    (20, ["ConcertHall", "Drumkit", "Piano", "Accessible"]),
+    (3, ["Piano"]),
+    (5, ["Piano"]),
+    (5, ["Drumkit"]),
+    (3, ["Accessible"]),
     (3, []),
     (3, []),
     (3, []),
@@ -29,21 +23,25 @@ rooms = [
 ]
 
 musicians_groups = [
-    ((0, 1, 2), [Attribute.Accessible]),
-    ((1, 2, 3), [Attribute.Accessible]),
-    ((2, 3, 4), [Attribute.Piano, Attribute.Accessible]),
-    ((3, 4, 5), [Attribute.Piano]),
-    ((4, 5, 6), [Attribute.Piano]),
-    ((5, 6, 7), [Attribute.Piano]),
-    ((6, 7, 8), [Attribute.Piano]),
-    ((7, 8, 9), [Attribute.Piano]),
+    ((0, 1, 2), ["Accessible"]),
+    ((1, 2, 3), ["Accessible"]),
+    ((2, 3, 4), ["Piano", "Accessible"]),
+    ((3, 4, 5), ["Piano"]),
+    ((4, 5, 6), ["Piano"]),
+    ((5, 6, 7), ["Piano"]),
+    ((6, 7, 8), ["Piano"]),
+    ((7, 8, 9), ["Piano"]),
     ((8, 9, 10), []),
     ((9, 10, 11), []),
-    ((0, 1, 2, 3, 4), [Attribute.Piano, Attribute.Accessible]),
-    ((5, 6, 7, 8, 9), [Attribute.Piano]),
+    ((0, 1, 2, 3, 4), ["Piano", "Accessible"]),
+    ((5, 6, 7, 8, 9), ["Piano"]),
     ((10, 11, 12, 13, 14, 15), []),
     ((15, 16, 17, 18, 19), []),
 ]
+
+raw_attributes: set[str] = set()
+for room in rooms:
+    raw_attributes.update(room[1])
 
 # Begin modelling
 
@@ -55,12 +53,12 @@ solver = Solver()
 AttributeSort = DeclareSort("Attribute")
 AttributeSetSort = SetSort(AttributeSort)
 
-attributes = {}
-for attribute in Attribute:
-    new_attribute = Const(attribute.name, AttributeSort)
-    for prev_attribute in attributes.values():
+attribute_consts = {}
+for attribute in raw_attributes:
+    new_attribute = Const(attribute, AttributeSort)
+    for prev_attribute in attribute_consts.values():
         solver.add(new_attribute != prev_attribute)
-    attributes[attribute] = new_attribute
+    attribute_consts[attribute] = new_attribute
 
 
 # Declare people
@@ -91,7 +89,7 @@ for idx, room in enumerate(rooms):
     # Add room attributes
     room_attributes = EmptySet(AttributeSort)
     for attribute in room[1]:
-        room_attributes = SetAdd(room_attributes, attributes[attribute])
+        room_attributes = SetAdd(room_attributes, attribute_consts[attribute])
     solver.add(RoomAttributes(new_room) == room_attributes)
 
 
@@ -116,7 +114,7 @@ for idx, group in enumerate(musicians_groups):
     # Add group attributes
     group_attributes = EmptySet(AttributeSort)
     for attribute in group[1]:
-        group_attributes = SetAdd(group_attributes, attributes[attribute])
+        group_attributes = SetAdd(group_attributes, attribute_consts[attribute])
     solver.add(GroupAttributes(new_group) == group_attributes)
 
     # Add group members
@@ -125,49 +123,57 @@ for idx, group in enumerate(musicians_groups):
         group_members = SetAdd(group_members, people[member])
     solver.add(GroupMembers(new_group) == group_members)
 
+GroupSetSort = SetSort(GroupSort)
+setOfGroups = EmptySet(GroupSort)
+for group in groups_consts:
+    setOfGroups = SetAdd(setOfGroups, group)
+
 
 # Declare Timeslot
 TimeslotSort = DeclareSort("Timeslot")
-timeslots = []
+timeslots_consts = []
 for timeslot_index in range(timeslots_count):
     new_timeslot = Const(f"Timeslot {timeslot_index}", TimeslotSort)
 
     # Define timeslot to be distinct from every other previously defined timeslot
-    for prev_timeslot in timeslots:
+    for prev_timeslot in timeslots_consts:
         solver.add(new_timeslot != prev_timeslot)
 
-    timeslots.append(new_timeslot)
+    timeslots_consts.append(new_timeslot)
 
 
-
-# group_1 = Const("Group 1", Group)
-# group_2 = Const("Group 2", Group)
-#
-#
 # solver.add(group_1 == SetAdd(SetAdd(EmptySet(PersonSort), people[0]), people[2]))
 # solver.add(group_2 == SetAdd(SetAdd(EmptySet(PersonSort), people[1]), people[1]))
 # solver.add(SetIntersect(group_1, group_2) == EmptySet(PersonSort))
-solver.add()
 
 
-assert solver.check() == sat
-
-print(solver.model())
-
-
-
-# Declare Sort for room-group-pair
-# Declare Sort for set of room-group-pair
+Timeslot_room_to_group = Function("Timeslot and Room to Group", TimeslotSort, RoomSort, GroupSort)
+Timeslot_group_to_room = Function("Timeslot and Group to Room", TimeslotSort, GroupSort, RoomSort)
 
 # define mapping function from time slot to {room, group}
 
-# Start defining constraints:
-# All persons, rooms, groups and time slots are distinct
-
 # for time slot t, the set can only contain each room at most once
+for room_a, room_b in itertools.combinations(rooms_consts, 2):
+    for timeslots_const in timeslots_consts:
+        # A group does not play twice at the same time
+        solver.add(Timeslot_room_to_group(timeslots_const, room_a) != Timeslot_room_to_group(timeslots_const, room_b))
+
+# The assigned group must exist
+for timeslots_const in timeslots_consts:
+    for room_const in rooms_consts:
+        result = Timeslot_room_to_group(timeslots_const, room_const)
+        result_set = SetAdd(EmptySet(GroupSort), result)
+        solver.add(SetIntersect(setOfGroups, result_set) != EmptySet(GroupSort))
+
+
 # for time slot t, every group size is smaller than it's room size
 # for time slot t, every room has at least all attributes of the assigned group
 # for time slot t, each group should be pairwise distinct
 # (alternative: the set of the union of all groups is equal in size to the sum of all group sizes)
 
 # over all time slots, each group is assigned to the concert hall at least once
+
+
+assert solver.check() == sat
+
+print(solver.model())
