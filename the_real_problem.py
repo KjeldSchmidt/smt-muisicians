@@ -1,5 +1,6 @@
 import json
 import itertools
+from datetime import datetime
 
 from z3 import *
 
@@ -191,13 +192,23 @@ for timeslots_const in timeslots_consts:
 
 
 # for time slot t, every room has at least all attributes of the assigned group
+for timeslots_const in timeslots_consts:
+    for room_const in rooms_consts:
+        result = Timeslot_room_to_group(timeslots_const, room_const)
+        solver.add(
+            SetDifference(GroupAttributes(result), RoomAttributes(room_const)) == EmptySet(AttributeSort)
+        )
+
 # for time slot t, each group should be pairwise distinct
 # (alternative: the set of the union of all groups is equal in size to the sum of all group sizes)
 
+# each group is assigned exactly `number of rehearsals` times
 # over all time slots, each group is assigned to the concert hall at least once
 
 
+print(datetime.now())
 assert solver.check() == sat
+print(datetime.now())
 
 model = solver.model()
 for thing in model:
