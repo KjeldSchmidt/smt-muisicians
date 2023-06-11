@@ -1,4 +1,3 @@
-import json
 import itertools
 from datetime import datetime
 
@@ -83,6 +82,7 @@ for person_index in range(person_count):
 
 # Declare rooms
 RoomSort = DeclareSort("Room")
+concert_hall_const = None
 rooms_consts = []
 
 RoomSize = Function("room_size", RoomSort, IntSort())
@@ -99,6 +99,9 @@ for idx, room in enumerate(rooms):
     for attribute in room[1]:
         room_attributes = SetAdd(room_attributes, attribute_consts[attribute])
     solver.add(RoomAttributes(new_room) == room_attributes)
+
+    if "ConcertHall" in room[1]:
+        concert_hall_const = new_room
 
 
 GroupSort = DeclareSort("Group")
@@ -142,7 +145,11 @@ for group in groups_consts:
 
 
 # Declare Timeslot
-TimeslotSort = DeclareSort("Timeslot")
+TimeSlotDatatype = Datatype("Timeslot")
+for timeslot_index in range(timeslots_count):
+    TimeSlotDatatype.declare(f"Timeslot {timeslot_index}")
+TimeslotSort = TimeSlotDatatype.create()
+
 timeslots_consts = []
 for timeslot_index in range(timeslots_count):
     new_timeslot = Const(f"Timeslot {timeslot_index}", TimeslotSort)
@@ -152,6 +159,12 @@ for timeslot_index in range(timeslots_count):
         solver.add(new_timeslot != prev_timeslot)
 
     timeslots_consts.append(new_timeslot)
+
+
+TimeslotSetSort = SetSort(TimeslotSort)
+set_of_timeslots = EmptySet(TimeslotSort)
+for timeslot in timeslots_consts:
+    set_of_timeslots = SetAdd(set_of_timeslots, timeslot)
 
 
 # solver.add(group_1 == SetAdd(SetAdd(EmptySet(PersonSort), people[0]), people[2]))
@@ -215,9 +228,23 @@ for room_a, room_b in itertools.combinations(rooms_consts, 2):
             )
         ))
 
+# each group is assigned exactly `number of rehearsals` times#
 
-# each group is assigned exactly `number of rehearsals` times
+
 # over all time slots, each group is assigned to the concert hall at least once
+for idx, group_const in enumerate(groups_consts):
+    time_slot_placeholder = Const(f"timeslot for main hall group {idx}", TimeslotSort)
+    set_of_placeholder = EmptySet(TimeslotSort)
+    set_of_placeholder = SetAdd(set_of_placeholder, time_slot_placeholder)
+    solver.add(
+        Exists(
+            time_slot_placeholder,
+            And(
+                Timeslot_room_to_group(time_slot_placeholder, concert_hall_const) == group_const,
+                SetIntersect(set_of_placeholder, set_of_timeslots) != EmptySet(TimeslotSort)
+            )
+        )
+    )
 
 
 print(datetime.now())
