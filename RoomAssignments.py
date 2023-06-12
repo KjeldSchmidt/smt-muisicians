@@ -202,23 +202,23 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
         for time_slot_a, time_slot_b in itertools.combinations(time_slots_for_group, 2):
             solver.add(time_slot_a != time_slot_b)
 
-
-    # over all time slots, each group is assigned to the concert hall at least once
-    for idx, group_const in enumerate(groups_consts):
-        time_slot_placeholder = Const(f"timeslot for main hall group {idx}", TimeslotSort)
-        set_of_placeholder = EmptySet(TimeslotSort)
-        set_of_placeholder = SetAdd(set_of_placeholder, time_slot_placeholder)
-        solver.add(
-            Exists(
-                time_slot_placeholder,
-                And(
-                    Timeslot_room_to_group(time_slot_placeholder, concert_hall_const) == group_const,
-                    SetIntersect(set_of_placeholder, set_of_timeslots) != EmptySet(TimeslotSort)
+    if concert_hall_const is not None:
+        # over all time slots, each group is assigned to the concert hall at least once
+        for idx, group_const in enumerate(groups_consts):
+            time_slot_placeholder = Const(f"timeslot for main hall group {idx}", TimeslotSort)
+            set_of_placeholder = EmptySet(TimeslotSort)
+            set_of_placeholder = SetAdd(set_of_placeholder, time_slot_placeholder)
+            solver.add(
+                Exists(
+                    time_slot_placeholder,
+                    And(
+                        Timeslot_room_to_group(time_slot_placeholder, concert_hall_const) == group_const,
+                        SetIntersect(set_of_placeholder, set_of_timeslots) != EmptySet(TimeslotSort)
+                    )
                 )
             )
-        )
 
-        return solver, groups_consts, timeslots_consts, rooms_consts
+    return solver, groups_consts, timeslots_consts, rooms_consts
 
 
 def extract_assignments(
