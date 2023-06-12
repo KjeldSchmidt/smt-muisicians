@@ -116,20 +116,17 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
     # Declare Timeslot
     TimeSlotDatatype = Datatype("Timeslot")
     for timeslot_index in range(timeslots_count):
-        TimeSlotDatatype.declare(f"Timeslot {timeslot_index}")
+        TimeSlotDatatype.declare(f"timeslot_{timeslot_index}")
     TimeslotSort = TimeSlotDatatype.create()
 
     timeslots_consts = []
     for timeslot_index in range(timeslots_count):
         new_timeslot = Const(f"Timeslot {timeslot_index}", TimeslotSort)
 
-        # Define timeslot to be distinct from every other previously defined timeslot
-        for prev_timeslot in timeslots_consts:
-            solver.add(new_timeslot != prev_timeslot)
+        solver.add(new_timeslot == TimeslotSort.__getattribute__(f"timeslot_{timeslot_index}"))
 
         timeslots_consts.append(new_timeslot)
 
-    TimeslotSetSort = SetSort(TimeslotSort)
     set_of_timeslots = EmptySet(TimeslotSort)
     for timeslot in timeslots_consts:
         set_of_timeslots = SetAdd(set_of_timeslots, timeslot)
