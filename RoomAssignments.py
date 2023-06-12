@@ -195,12 +195,7 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
             room_placeholder = Const(f"Session {session_idx} for group {group_idx} room", RoomSort)
             time_slots_for_group.append(time_slot_placeholder)
 
-            solver.add(
-                Exists(
-                    [time_slot_placeholder, room_placeholder],
-                    Timeslot_room_to_group(time_slot_placeholder, room_placeholder) == group_const
-                )
-            )
+            solver.add(Timeslot_room_to_group(time_slot_placeholder, room_placeholder) == group_const)
 
         # And all of these pairs happen at a different time
         for time_slot_a, time_slot_b in itertools.combinations(time_slots_for_group, 2):
