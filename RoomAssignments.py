@@ -251,6 +251,19 @@ def extract_assignments(
     return main_data_list
 
 
+def solve_and_extract(rooms, musicians_groups, person_count, timeslots_count, number_of_rehearsals):
+    solver, group_consts, timeslots_consts, rooms_consts = assign(
+        rooms,
+        musicians_groups,
+        person_count,
+        timeslots_count,
+        number_of_rehearsals
+    )
+    solver.check()
+    assignments = extract_assignments(solver, group_consts, timeslots_consts, rooms_consts)
+    return assignments
+
+
 if __name__ == "__main__":
     person_count_example = 20
     timeslots_count_example = 3
