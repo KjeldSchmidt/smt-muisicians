@@ -71,7 +71,12 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
         if "ConcertHall" in room[1]:
             concert_hall_const = new_room
 
-    GroupSort = DeclareSort("Group")
+    GroupDatatype = Datatype("Group")
+    for group_index in range(len(musicians_groups)):
+        GroupDatatype.declare(f"group_{group_index}")
+    GroupDatatype.declare("no_group")
+    GroupSort = GroupDatatype.create()
+
     GroupSize = Function("group_size", GroupSort, IntSort())
     GroupMembers = Function("group_members", GroupSort, SetSort(PersonSort))
     GroupAttributes = Function("group_attributes", GroupSort, AttributeSetSort)
@@ -79,14 +84,13 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
     solver.add(GroupSize(no_group_const) == 0)
     solver.add(GroupAttributes(no_group_const) == EmptySet(AttributeSort))
     solver.add(GroupMembers(no_group_const) == EmptySet(PersonSort))
+    solver.add(no_group_const == GroupSort.no_group)
 
     groups_consts = []
     for idx, group in enumerate(musicians_groups):
         new_group = Const(f"Group {idx}", GroupSort)
 
-        # Distinct groups
-        for prev_group in groups_consts:
-            solver.add(new_group != prev_group)
+        solver.add(new_group == GroupSort.__getattribute__(f"group_{idx}"))
 
         groups_consts.append(new_group)
 
@@ -276,3 +280,9 @@ if __name__ == "__main__":
             print(f"{thing} =")
             for line in model.get_interp(thing).as_list():
                 print(f"{line}")
+
+    print()
+    print()
+    print()
+    assignments = extract_assignments(solver, group_consts, timeslots_consts, rooms_consts)
+    print(assignments)
