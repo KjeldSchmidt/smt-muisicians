@@ -45,7 +45,7 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
     # Declare rooms
     RoomDatatype = Datatype("Room")
     for room_index in range(len(rooms)):
-        RoomDatatype.declare(f"Room {room_index}")
+        RoomDatatype.declare(f"room_{room_index}")
     RoomSort = RoomDatatype.create()
     concert_hall_const = None
     rooms_consts = []
@@ -59,6 +59,8 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
         # Add room size
         solver.add(RoomSize(new_room) == room[0])
 
+        solver.add(new_room == RoomSort.__getattribute__(f"room_{idx}"))
+
         # Add room attributes
         room_attributes = EmptySet(AttributeSort)
         for attribute in room[1]:
@@ -67,7 +69,6 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
 
         if "ConcertHall" in room[1]:
             concert_hall_const = new_room
-
 
     GroupSort = DeclareSort("Group")
     GroupSize = Function("group_size", GroupSort, IntSort())
