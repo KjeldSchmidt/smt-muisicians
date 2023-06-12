@@ -218,7 +218,37 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
             )
         )
 
-        return solver
+        return solver, groups_consts, timeslots_consts, rooms_consts
+
+
+def extract_assignments(
+        solver: Solver,
+        group_consts: list,
+        timeslots_consts: list,
+        rooms_consts: list,
+    ):
+    main_data_list = []
+    model = solver.model()
+    for thing in model:
+        if thing.name() == "Timeslot and Room to Group":
+            for line in model.get_interp(thing).as_list():
+                main_data_list.append(line)
+
+
+    main_data_list = main_data_list[:-1]  # Drop default group
+
+    group_mapping = [model.get_interp(group_const) for group_const in group_consts]
+    for item in main_data_list:
+        item[2] = group_mapping.index(item[2])
+
+    room_mapping = [model.get_interp(room_const) for room_const in rooms_consts]
+    for item in main_data_list:
+        item[1] = room_mapping.index(item[1])
+
+    timeslot_mapping = [model.get_interp(timeslot_const) for timeslot_const in timeslots_consts]
+    for item in main_data_list:
+        item[0] = timeslot_mapping.index(item[0])
+    return main_data_list
 
 
 if __name__ == "__main__":
@@ -265,7 +295,7 @@ if __name__ == "__main__":
         # ((15, 16, 17, 18, 19), []),
     ]
 
-    solver = assign(
+    solver, group_consts, timeslots_consts, rooms_consts = assign(
         rooms_example,
         musicians_groups_example,
         person_count_example,
