@@ -188,11 +188,11 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
         time_slots_for_group = []
         # There are `number of rehearsals` pairs of time/place where a group plays
         for session_idx in range(number_of_rehearsals):
-            time_slot_placeholder = Const(f"Session {session_idx} for group {group_idx} timeslot", TimeslotSort)
+            time_slot_in_hall = Const(f"Session {session_idx} for group {group_idx} timeslot", TimeslotSort)
             room_placeholder = Const(f"Session {session_idx} for group {group_idx} room", RoomSort)
-            time_slots_for_group.append(time_slot_placeholder)
+            time_slots_for_group.append(time_slot_in_hall)
 
-            solver.add(Timeslot_room_to_group(time_slot_placeholder, room_placeholder) == group_const)
+            solver.add(Timeslot_room_to_group(time_slot_in_hall, room_placeholder) == group_const)
 
         # And all of these pairs happen at a different time
         for time_slot_a, time_slot_b in itertools.combinations(time_slots_for_group, 2):
@@ -201,17 +201,9 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
     if concert_hall_const is not None:
         # over all time slots, each group is assigned to the concert hall at least once
         for idx, group_const in enumerate(groups_consts):
-            time_slot_placeholder = Const(f"timeslot for main hall group {idx}", TimeslotSort)
-            set_of_placeholder = EmptySet(TimeslotSort)
-            set_of_placeholder = SetAdd(set_of_placeholder, time_slot_placeholder)
+            time_slot_in_hall = Const(f"timeslot for main hall group {idx}", TimeslotSort)
             solver.add(
-                Exists(
-                    time_slot_placeholder,
-                    And(
-                        Timeslot_room_to_group(time_slot_placeholder, concert_hall_const) == group_const,
-                        SetIntersect(set_of_placeholder, set_of_timeslots) != EmptySet(TimeslotSort)
-                    )
-                )
+                Timeslot_room_to_group(time_slot_in_hall, concert_hall_const) == group_const
             )
 
     return solver, groups_consts, timeslots_consts, rooms_consts
