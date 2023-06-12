@@ -26,7 +26,6 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
             solver.add(new_attribute != prev_attribute)
         attribute_consts[attribute] = new_attribute
 
-
     # Declare people
     PersonDatatype = Datatype("Person")
     for person_index in range(person_count):
@@ -109,7 +108,6 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
     for group in groups_consts:
         setOfGroups = SetAdd(setOfGroups, group)
 
-
     # Declare Timeslot
     TimeSlotDatatype = Datatype("Timeslot")
     for timeslot_index in range(timeslots_count):
@@ -126,14 +124,12 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
 
         timeslots_consts.append(new_timeslot)
 
-
     TimeslotSetSort = SetSort(TimeslotSort)
     set_of_timeslots = EmptySet(TimeslotSort)
     for timeslot in timeslots_consts:
         set_of_timeslots = SetAdd(set_of_timeslots, timeslot)
 
     Timeslot_room_to_group = Function("Timeslot and Room to Group", TimeslotSort, RoomSort, GroupSort)
-
 
     # No group can play in two rooms at the same time
     for room_a, room_b in itertools.combinations(rooms_consts, 2):
@@ -152,13 +148,11 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
             result_set = SetAdd(EmptySet(GroupSort), result)
             solver.add(SetIntersect(allowed_results_set, result_set) != EmptySet(GroupSort))
 
-
     # for time slot t, every group size is smaller than it's room size
     for timeslots_const in timeslots_consts:
         for room_const in rooms_consts:
             result = Timeslot_room_to_group(timeslots_const, room_const)
             solver.add(GroupSize(result) <= RoomSize(room_const))
-
 
     # for time slot t, every room has at least all attributes of the assigned group
     for timeslots_const in timeslots_consts:
@@ -226,14 +220,13 @@ def extract_assignments(
         group_consts: list,
         timeslots_consts: list,
         rooms_consts: list,
-    ):
+):
     main_data_list = []
     model = solver.model()
     for thing in model:
         if thing.name() == "Timeslot and Room to Group":
             for line in model.get_interp(thing).as_list():
                 main_data_list.append(line)
-
 
     main_data_list = main_data_list[:-1]  # Drop default group
 
