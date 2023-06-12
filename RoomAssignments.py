@@ -105,10 +105,9 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
             group_members = SetAdd(group_members, people[member])
         solver.add(GroupMembers(new_group) == group_members)
 
-    GroupSetSort = SetSort(GroupSort)
-    setOfGroups = EmptySet(GroupSort)
+    set_of_groups = EmptySet(GroupSort)
     for group in groups_consts:
-        setOfGroups = SetAdd(setOfGroups, group)
+        set_of_groups = SetAdd(set_of_groups, group)
 
     # Declare Timeslot
     TimeSlotDatatype = Datatype("Timeslot")
@@ -144,7 +143,7 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
 
     # Any assigned group must exist or be the NoGroup
     for timeslots_const in timeslots_consts:
-        allowed_results_set = SetAdd(setOfGroups, no_group_const)
+        allowed_results_set = SetAdd(set_of_groups, no_group_const)
         for room_const in rooms_consts:
             result = Timeslot_room_to_group(timeslots_const, room_const)
             result_set = SetAdd(EmptySet(GroupSort), result)
