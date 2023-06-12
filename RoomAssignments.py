@@ -134,6 +134,8 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
     Timeslot_room_to_group = Function("Timeslot and Room to Group", TimeslotSort, RoomSort, GroupSort)
 
     # No group can play in two rooms at the same time
+    # This is technically covered by "no two assignments can overlap"
+    # But since it is higher level, it might guide the solution?
     for room_a, room_b in itertools.combinations(rooms_consts, 2):
         for timeslots_const in timeslots_consts:
             # A group does not play twice at the same time
@@ -141,14 +143,6 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
                 Timeslot_room_to_group(timeslots_const, room_a) == Timeslot_room_to_group(timeslots_const, room_b),
                 Timeslot_room_to_group(timeslots_const, room_a) == no_group_const
             ))
-
-    # Any assigned group must exist or be the NoGroup
-    for timeslots_const in timeslots_consts:
-        allowed_results_set = SetAdd(set_of_groups, no_group_const)
-        for room_const in rooms_consts:
-            result = Timeslot_room_to_group(timeslots_const, room_const)
-            result_set = SetAdd(EmptySet(GroupSort), result)
-            solver.add(SetIntersect(allowed_results_set, result_set) != EmptySet(GroupSort))
 
     # for time slot t, every group size is smaller than it's room size
     for timeslots_const in timeslots_consts:
