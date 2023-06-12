@@ -3,6 +3,8 @@ from datetime import datetime
 
 from z3 import *
 
+from test_data import *
+
 
 def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_rehearsals):
     raw_attributes: set[str] = set()
@@ -259,55 +261,8 @@ def solve_and_extract(rooms, musicians_groups, person_count, timeslots_count, nu
 
 
 if __name__ == "__main__":
-    person_count_example = 20
-    timeslots_count_example = 3
-    number_of_rehearsals_example = 3
-
-    rooms_example = [
-        (20, ["ConcertHall", "Drumkit", "Piano", "Accessible"]),
-        (5, ["Piano"]),
-        (5, ["Drumkit"]),
-        (3, ["Accessible"]),
-        (3, ["Piano"]),
-        (5, []),
-        (3, []),
-        (3, []),
-        (3, []),
-        (3, []),
-        (3, []),
-        (3, []),
-        (3, []),
-        (3, []),
-        (3, []),
-        (3, []),
-        (3, []),
-        (3, []),
-    ]
-
-
-    musicians_groups_example = [
-        ((0, 1, 2), ["Accessible"]),
-        # ((1, 2, 3), ["Accessible"]),
-        # ((2, 3, 4), ["Piano", "Accessible"]),
-        ((3, 4, 5), ["Piano"]),
-        # ((4, 5, 6), ["Piano"]),
-        # ((5, 6, 7), ["Piano"]),
-        # ((6, 7, 8), ["Piano"]),
-        # ((7, 8, 9), ["Piano"]),
-        # ((8, 9, 10), []),
-        # ((9, 10, 11), []),
-        # ((0, 1, 2, 3, 4), ["Piano", "Accessible"]),
-        # ((5, 6, 7, 8, 9), ["Piano"]),
-        ((10, 11, 12, 13, 14, 15), []),
-        # ((15, 16, 17, 18, 19), []),
-    ]
-
     solver, group_consts, timeslots_consts, rooms_consts = assign(
-        rooms_example,
-        musicians_groups_example,
-        person_count_example,
-        timeslots_count_example,
-        number_of_rehearsals_example
+        *base_data()
     )
 
     print(datetime.now())
