@@ -259,9 +259,10 @@ def solve_and_extract(rooms, musicians_groups, person_count, timeslots_count, nu
         timeslots_count,
         number_of_rehearsals
     )
-    solver.check()
-    assignments = extract_assignments(solver, group_consts, timeslots_consts, rooms_consts)
-    return assignments
+    if solver.check() == sat:
+        return extract_assignments(solver, group_consts, timeslots_consts, rooms_consts)
+    else:
+        return []
 
 
 if __name__ == "__main__":
