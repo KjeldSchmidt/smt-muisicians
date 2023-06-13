@@ -144,7 +144,7 @@ def assign(rooms, musicians_groups, person_count, timeslots_count, number_of_reh
                 Timeslot_room_to_group(timeslots_const, room_a) == no_group_const
             ))
 
-    # for time slot t, every group size is smaller than it's room size
+    # for time slot t, every group size fits into the room
     for timeslots_const in timeslots_consts:
         for room_const in rooms_consts:
             result = Timeslot_room_to_group(timeslots_const, room_const)
@@ -217,6 +217,7 @@ def extract_assignments(
                 main_data_list.append(line)
 
     main_data_list = main_data_list[:-1]  # Drop default group
+    main_data_list = list(filter(lambda x: x[2] in group_consts, main_data_list))
 
     group_mapping = [model.get_interp(group_const) for group_const in group_consts]
     for item in main_data_list:
